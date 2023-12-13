@@ -46,16 +46,19 @@ pipeline {
                 }
             }
         }
-        stage('Start Server'){
+        stage('Create a kubernetes cluster using Kind'){
             steps{
-                bat 'docker run -d -p 8080:8080 pranit007/go-server'
-                echo "Successfully started server"
+                bat 'kind create cluster --config manifest_files/config.yml'
             }
         }
-        stage('Start Frontend'){
+        stage('Create deployment'){
             steps{
-                bat 'docker run -d -p 80:80 pranit007/frontend'
-                echo "Successfully started frontend"
+                bat 'kubectl apply -f manifest_files/deployment.yml'
+            }
+        }
+        stage('Create service'){
+            steps{
+                bat 'kubectl apply -f manifest_files/service.yml'
             }
         }
         
