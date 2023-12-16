@@ -22,6 +22,21 @@ pipeline {
                 }
             }
         }
+        stage('Code Analysis') {
+            environment {
+                scannerHome = tool 'sonar4.7'
+            }
+            steps {
+                  withSonarQubeEnv('sonar') {
+                      bat '%scannerHome%\\bin\\sonar-scanner -Dsonar.projectKey=weather-tracker' +
+                        '-Dsonar.projectName=weather-tracker' +
+                        '-Dsonar.projectVersion=1.0 ' +
+                        '-Dsonar.sources=. '
+               
+              }
+            }
+
+        }
         stage('Build Docker Image for server'){
             steps {
                 bat 'docker build -t go-server .'
@@ -45,6 +60,14 @@ pipeline {
                    echo "Successfully Pushed Frontend Image to dockerhub"
                 }
             }
+        }
+        stage('scan with trivy') {
+            steps {
+            
+                bat "docker run --rm -v D:/trivy-report/:/root/.cache/ aquasec/trivy:0.18.3 image pranit007/go-server:latest"
+                bat "docker run --rm -v D:/trivy-report/:/root/.cache/ aquasec/trivy:0.18.3 image pranit007/frontend:latest"
+            }
+
         }
         stage('Create a kubernetes cluster using Kind'){
             steps{
