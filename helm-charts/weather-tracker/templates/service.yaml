@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "weather-tracker.fullname" . }}
+  labels:
+    {{- include "weather-tracker.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8080
+      nodePort: 32216
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "weather-tracker.selectorLabels" . | nindent 4 }}
