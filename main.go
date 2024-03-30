@@ -10,10 +10,17 @@ import (
 	"github.com/rs/cors"
 )
 
+type WeatherInfo struct {
+	Main        string `json:"main"`
+	Description string `json:"description"`
+}
+
 type GetWeatherData struct {
-	Main struct {
+	Name    string       `json:"name"`
+	Main    struct {
 		Kelvin float64 `json:"temp"`
 	} `json:"main"`
+	Weather []WeatherInfo `json:"weather"`
 }
 
 func query(city string, apiToken string) (GetWeatherData, error) {
@@ -38,7 +45,11 @@ func main() {
 		apiToken := os.Getenv("API_TOKEN")
 		data, err := query(city, apiToken)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Error fetching weather data: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(data.Weather) == 0 {
+			http.Error(w, "Weather data not found for the city", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
