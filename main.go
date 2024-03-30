@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,42 +28,34 @@ type GetWeatherData struct {
 	Weather []WeatherInfo `json:"weather"`
 }
 
-
-func APIConfig(filename string) (WeatherAPI, error) {
-	bytes, err := os.ReadFile(filename)
-	if err != nil {
-		return WeatherAPI{}, err
-	}
+func APIConfig(apiToken string) (WeatherAPI, error) {
 	var x WeatherAPI
-	err = json.Unmarshal(bytes, &x)
-	if err != nil {
-		return WeatherAPI{}, err
-	}
-	fmt.Printf("u: %+v\n", x)
+	x.API = apiToken
+	fmt.Printf("API token: %+v\n", x.API)
 	return x, nil
-
 }
+
 func hello(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from go!\n"))
 }
-func querry(city string) (GetWeatherData, error) {
-	apiConfig, err := APIConfig(".apiConfig")
+
+func query(city string, apiToken string) (GetWeatherData, error) {
+	apiConfig, err := APIConfig(apiToken)
 	if err != nil {
 		return GetWeatherData{}, err
 	}
-	resp, err := http.Get("https://api.openweathermap.org/data/2.5/weather?q="+city+"&appid="+apiConfig.API)
+	resp, err := http.Get("https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiConfig.API)
 	if err != nil {
 		return GetWeatherData{}, err
 	}
-	fmt.Println("response",resp.Body)
 	defer resp.Body.Close()
 	var d GetWeatherData
-	json.NewDecoder(resp.Body).Decode(&d)
-	d.Main.Kelvin = d.Main.Kelvin -273
-	d.Main.Kelvin = float64(int(d.Main.Kelvin*100)) / 100
+	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
 		return GetWeatherData{}, err
 	}
+	d.Main.Kelvin = d.Main.Kelvin - 273
+	d.Main.Kelvin = float64(int(d.Main.Kelvin*100)) / 100
 	return d, nil
 }
 
@@ -75,7 +66,8 @@ func main() {
 	mux.HandleFunc("/weather/",
 		func(w http.ResponseWriter, r *http.Request) {
 			city := strings.SplitN(r.URL.Path, "/", 3)[2]
-			data, err := querry(city)
+			apiToken := os.Getenv("API_TOKEN")
+			data, err := query(city, apiToken)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -84,7 +76,7 @@ func main() {
 			json.NewEncoder(w).Encode(data)
 		})
 
-	// Enable CORS for all routes using cors.Default().Handler
+
 	handler := cors.Default().Handler(mux)
 
 	log.Println("Listening....")
