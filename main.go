@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/rs/cors"
 )
 
 type GetWeatherData struct {
@@ -43,6 +45,8 @@ func main() {
 		json.NewEncoder(w).Encode(data)
 	})
 
+	handler := cors.Default().Handler(mux)
+
 	log.Println("Listening....")
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(":8080", handler)
 }
